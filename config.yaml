@@ -1,0 +1,334 @@
+# Общие настройки Xkeen
+listeners:
+  - name: tproxy                          # Имя слушателя, используется для перехвата трафика
+    type: tproxy                          # Тип слушателя: tproxy (Transparent Proxy), перехватывает трафик прозрачно
+    port: 1181                            # Порт, на котором Xkeen слушает входящий трафик для tproxy. Не меняйте, если не уверены.
+mixed-port: 1080                          # Порт, который слушает Xkeen для обычных HTTP/SOCKS5 прокси-соединений. Можно использовать в приложениях вручную.
+allow-lan: true                           # Разрешить другим устройствам в локальной сети подключаться к Xkeen.
+mode: rule                                # Режим работы Xkeen: traffic маршрутизируется по правилам.
+log-level: silent                         # Уровень логирования: info (для отладки рекламы), silent, warning, error, debug. Для повседневной работы silent - оптимален.
+ipv6: false                               # Отключить поддержку IPv6, если не используется или вызывает проблемы.
+external-controller: 0.0.0.0:9090         # IP-адрес и порт для внешнего управления (веб-интерфейс, API). Доступен с любого устройства в локальной сети.
+external-ui: ./zash                       # Путь к папке с файлами веб-интерфейса.
+external-ui-url: "https://github.com/Zephyruso/zashboard/releases/latest/download/dist-cdn-fonts.zip" # Ссылка для загрузки веб-интерфейса Zashboard.
+# Если вы хотите использовать более функциональный Metacubexd UI, раскомментируйте строку ниже и закомментируйте текущую:
+# external-ui-url: "https://github.com/MetaCubeX/metacubexd/releases/latest/download/compressed-dist.tgz"
+geodata-mode: true                        # Включить режим использования гео-данных (GeoIP/GeoSite) для правил.
+profile:
+  store-selected: true                    # Сохранять выбранный прокси при перезапуске.
+
+
+# ============================================================
+# --- НАСТРОЙКИ СНИФФЕРА ---
+# ============================================================
+# Sniffer анализирует трафик для определения типа (HTTP/TLS/QUIC) и извлечения информации (например, SNI для HTTPS).
+# Это помогает в более точной маршрутизации по доменам, даже если они не используют стандартные порты.
+sniffer:
+  enable: true                            # Включить сниффер.
+  parse-pure-ip: true                     # Разрешить парсинг IP-адресов без доменных имен.
+  force-dns-mapping: true                 # Принудительно отображать DNS-записи для сниффинга.
+  sniff:
+    HTTP:
+      ports: [80, 8080-8880]              # Порты, на которых сниффер будет искать HTTP-трафик. Расширены для неcтандартных портов.
+    TLS:
+      ports: [443, 8443]                  # Порты, на которых сниффер будет искать TLS (HTTPS) трафик. Расширены для неcтандартных портов.
+    QUIC:
+      ports: [443]                        # Порты, на которых сниффер будет искать QUIC-трафик.
+
+
+# ============================================================
+# --- ПРОВАЙДЕР ПРОКСИ-СЕРВЕРОВ (ПОДПИСКА) ---
+# ============================================================
+# Определяет источник ваших прокси-серверов. Здесь используется подписка.
+proxy-providers:
+  subscription:
+    type: http                            # Тип провайдера: HTTP (для ссылки на подписку).
+    url: https://ссылка подписки # <-- Вставьте здесь ссылку на вашу подписку на прокси
+    path: ./proxy-providers/subscription.yaml # Путь, куда будет сохранен список прокси-серверов.
+    interval: 3600                        # Интервал обновления подписки в секундах (3600 секунд = 1 час).
+    health-check:                         # Настройки проверки работоспособности прокси.
+      enable: true                        # Включить проверку работоспособности.
+      url: http://www.msftncsi.com/ncsi.txt # URL для проверки (Microsoft NCSI - обычно всегда доступен).
+      interval: 20                        # Интервал проверки в секундах.
+    override:                             # Дополнительные опции, которые могут быть применены ко всем прокси из этой подписки.
+      tfo: true                           # Включить TCP Fast Open для ускорения соединений (если прокси поддерживает).
+      mptcp: true                         # Включить MultiPath TCP (MPTCP) для улучшения надежности (если прокси поддерживает).
+      udp: true                           # Включить поддержку UDP-трафика через прокси (важно для QUIC, некоторых игр, VoIP).
+
+
+# ============================================================
+# --- СЕКЦИЯ DNS ---
+# ============================================================
+# Настройки DNS-серверов для разрешения доменных имен.
+dns:
+  enable: true                            # Включить DNS-сервер Xkeen.
+
+# ============================================================
+  # --- ДОБАВЛЕНА НАСТРОЙКА FAKE-IP ДЛЯ УЛУЧШЕНИЯ БЛОКИРОВКИ РЕКЛАМЫ ---
+# ============================================================
+  fake-ip-range: 198.18.0.1/16            # Диапазон поддельных IP, сюда будут резолвиться заблокированные домены.
+  fake-ip-filter:                         # Домены, для которых не нужно подставлять fake-ip (например, локальные ресурсы).
+    - +.lan
+    - +.local
+    - +.localhost
+    - +.ipn.skype.com
+    - +.msftncsi.com
+    - +.pool.ntp.org
+    - +.time.windows.com
+    - +.apple.com
+
+# ============================================================
+  # --- КОНЕЦ ДОБАВЛЕННЫХ НАСТРОЕК FAKE-IP ---
+# ============================================================
+  default-nameserver:                     # Серверы, используемые по умолчанию для большинства запросов.
+    - 1.1.1.1                             # Cloudflare DNS
+    - 208.67.222.222                      # OpenDNS
+    - 9.9.9.9                             # Quad9
+    - system                              # Использовать системные DNS-серверы (вашего провайдера).
+  nameserver:                             # Дополнительные DNS-серверы, можно использовать для DoH/DoT.
+    - https://doh.opendns.com/dns-query   # DNS-over-HTTPS (DoH) от OpenDNS
+    - https://mozilla.cloudflare-dns.com/dns-query # DoH от Cloudflare (используется Mozilla)
+    - tls://dns.adguard-dns.com           # DNS-over-TLS (DoT) от AdGuard (блокирует рекламу)
+    - tls://one.one.one.one               # DoT от Cloudflare
+    - dns.opendns.com                     # Обычный DNS
+  direct-nameserver:                      # DNS-серверы, используемые для доменов, идущих НАПРЯМУЮ (DIRECT).
+    - 1.1.1.1
+    - 208.67.222.222
+    - 9.9.9.9
+    - system
+  fallback:                               # Резервные DNS-серверы, используемые, если основные не смогли разрешить домен.
+    - tls://1.1.1.1
+    - tls://9.9.9.9
+    - tls://dns.opendns.com
+    - https://doh.opendns.com/dns-query
+    - https://mozilla.cloudflare-dns.com/dns-query
+  fallback-filter:                        # Правила, которые определяют, когда использовать резервные DNS.
+    geoip: true                           # Включить фильтрацию по GeoIP.
+    geoip-code: RU                        # Для запросов к IP из России использовать fallback DNS.
+    ipcidr:
+      - 240.0.0.0/4                       # Использовать fallback для определенных приватных IP-диапазонов.
+    domain:                               # Использовать fallback для этих доменов.
+      - '+.google.com'
+      - '+.facebook.com'
+      - '+.youtube.com' 
+      - '+.googlevideo.com'
+      - '+.twitter.com'
+      - '+.instagram.com'
+      - '+.github.com'
+
+
+# ============================================================
+# --- ГРУППЫ ПРОКСИ ---
+# ============================================================
+# Определяют логику выбора прокси-сервера.
+proxy-groups:
+  # Главный переключатель режимов. Позволяет вручную выбрать режим через веб-интерфейс.
+  - name: MAIN MODE
+    type: select                          # Тип группы: select (ручной выбор).
+    proxies:
+      - PROXY AUTO                        # Автоматический выбор прокси.
+      - PROXY MANUAL                      # Ручной выбор прокси из списка подписки.
+      - DIRECT                            # Принудительный прямой доступ (без прокси).
+
+  # Группа для автоматического режима.
+  # Логика: Сначала пытается использовать самый быстрый прокси (PROXY FASTEST).
+  # Если он падает, переключается на группу PROXY FAILOVER, которая переберет все остальные живые прокси.
+  # Если и там все мертвы, переключится на DIRECT.
+  - name: PROXY AUTO
+    type: fallback                        # Тип группы: fallback (переключается на следующий, если текущий не работает).
+    proxies:
+      - PROXY FASTEST
+      - PROXY FAILOVER
+      - DIRECT
+    url: http://www.msftncsi.com/ncsi.txt # URL для проверки работоспособности.
+    interval: 30                          # Интервал проверки для переключения (чтобы "отлипнуть" от DIRECT/PROXY FAILOVER и вернуться к PROXY FASTEST).
+
+  # Группа для выбора самого быстрого из ЖИВЫХ прокси.
+  - name: PROXY FASTEST
+    type: url-test                        # Тип группы: url-test (выбирает самый быстрый).
+    use:
+      - subscription                      # Использовать прокси из провайдера 'subscription'.
+    url: http://www.msftncsi.com/ncsi.txt
+    interval: 300                         # Интервал для пересортировки живых прокси по скорости (каждые 5 минут).
+    lazy: false                           # Не откладывать проверку.
+
+  # Группа для перебора ВСЕХ живых прокси в случае отказа самого быстрого.
+  # Это гарантирует, что мы не переключимся на DIRECT, пока есть хоть один живой прокси.
+  - name: PROXY FAILOVER
+    type: fallback
+    use:
+      - subscription
+    url: http://www.msftncsi.com/ncsi.txt
+    interval: 60                          # Интервал проверки для переключения на следующий прокси.
+
+  # Группа для ручного выбора сервера из подписки.
+  - name: PROXY MANUAL
+    type: select                          # Тип группы: select (ручной выбор).
+    use:
+      - subscription
+
+
+# ============================================================
+# --- НАСТРОЙКИ GEO-ДАННЫХ ---
+# ============================================================
+# Источники файлов с гео-данными (списки доменов по категориям, IP-диапазоны по странам).
+geox-url:
+  # Обновлен источник geosite.dat для более актуальных списков заблокированных доменов в России.
+  geosite: "https://github.com/runetfreedom/russia-v2ray-rules-dat/releases/latest/download/geosite.dat"
+  geoip: "https://github.com/v2fly/geoip/releases/download/202506050146/geoip.dat" # Источник GeoIP данных.
+geo-auto-update: true                     # Включить автоматическое обновление гео-данных (GeoIP/GeoSite).
+geo-update-interval: 43200                # Интервал обновления в часах (каждые 12 часов).
+
+
+# ============================================================
+# --- ПРОВАЙДЕРЫ ПРАВИЛ ---
+# ============================================================
+# Источники внешних наборов правил. Позволяют использовать актуальные списки доменов/IP.
+rule-providers:
+  # Правила для блокировки рекламы и трекеров (агрессивные)
+  adguard_ads:
+    type: http
+    behavior: domain
+    format: yaml
+    url: https://anti-ad.net/clash.yaml
+    path: ./rule-providers/adguard_ads.yaml
+    interval: 43200                       # Обновлять каждые 12 часов.
+
+  oisd_big:                               # Правила для блокировки рекламы и трекеров (большой список OISD).
+    type: http
+    behavior: domain
+    format: mrs
+    url: https://github.com/legiz-ru/mihomo-rule-sets/raw/main/oisd/big.mrs
+    path: ./oisd/big.mrs
+    interval: 86400
+
+  # Правила антицензуры (российские блокировки)
+  ru-blocked:                             # Правила для заблокированных доменов в РФ.
+    type: http
+    behavior: domain
+    format: mrs
+    url: https://github.com/legiz-ru/mihomo-rule-sets/raw/main/ru-bundle/blocked.mrs # Источник актуальных заблокированных доменов.
+    path: ./rule-sets/ru-blocked.mrs
+    interval: 43200                       # Обновлять каждые 12 часов.
+
+  # Правила для стриминговых сервисов
+  streaming:                              # Правила для стриминговых платформ (например, Netflix, YouTube и т.д.).
+    type: http
+    behavior: domain
+    format: mrs                           # Используется формат MRS.
+    url: https://github.com/blackmatrix7/ios_rule_script/raw/master/rule/Clash/GlobalMedia/GlobalMedia.yaml # Универсальный список стриминга.
+    path: ./rule-providers/streaming.mrs
+    interval: 86400                       # Обновлять раз в 24 часа.
+
+  # Дополнительные правила
+  discord-voice-ips:                      # Правила для голосовых IP Discord.
+    type: http
+    behavior: ipcidr
+    format: mrs
+    url: https://github.com/legiz-ru/mihomo-rule-sets/raw/main/other/discord-voice-ip-list.mrs
+    path: ./rule-providers/discord-voice-ips.mrs
+    interval: 86400
+
+  torrent-trackers:                       # Провайдер правил для доменов торрент-трекеров.
+    type: http
+    behavior: domain
+    format: mrs
+    url: https://github.com/legiz-ru/mihomo-rule-sets/raw/main/other/torrent-trackers.mrs
+    path: ./rule-sets/torrent-trackers.mrs
+    interval: 86400
+  torrent-clients:                        # Провайдер правил для сигнатур торрент-клиентов.
+    type: http
+    behavior: classical                   # Использует классический формат (YAML).
+    format: yaml
+    url: https://github.com/legiz-ru/mihomo-rule-sets/raw/main/other/torrent-clients.yaml
+    path: ./rule-sets/torrent-clients.yaml
+    interval: 86400
+  ru-bundle:                              # Правила для российского сегмента интернета.
+    type: http
+    behavior: domain
+    format: mrs
+    url: https://github.com/legiz-ru/mihomo-rule-sets/raw/main/ru-bundle/rule.mrs
+    path: ./rule-sets/ru-bundle.mrs
+    interval: 86400
+  refilter_domains:                       # Дополнительные правила фильтрации доменов.
+    type: http
+    behavior: domain
+    format: mrs
+    url: https://github.com/legiz-ru/mihomo-rule-sets/raw/main/re-filter/domain-rule.mrs
+    path: ./rule-sets/refilter_domains.mrs
+    interval: 86400
+  refilter_ipsum:                         # Дополнительные правила фильтрации IP-адресов.
+    type: http
+    behavior: ipcidr
+    format: mrs
+    url: https://github.com/legiz-ru/mihomo-rule-sets/raw/main/re-filter/ip-rule.mrs
+    path: ./rule-sets/refilter_ipsum.mrs
+    interval: 86400
+
+
+# ============================================================
+# --- ПРАВИЛА МАРШРУТИЗАЦИИ ---
+# ============================================================
+# Определяют, как трафик должен быть обработан. Правила обрабатываются сверху вниз.
+# Первое совпавшее правило применяется, остальные игнорируются.
+rules:
+  # Блокировка рекламы и служебного трафика (высший приоритет)
+  - RULE-SET,adguard_ads,REJECT,no-resolve # Блокировка рекламы через AdGuard (домены не резолвятся).
+  - RULE-SET,oisd_big,REJECT,no-resolve    # Блокировка рекламы и трекеров через OISD (домены не резолвятся).
+  - AND,((NETWORK,UDP),(DST-PORT,443)),REJECT # Блокировка QUIC (UDP/443) для избежания обхода правил и лучшей фильтрации.
+
+  # Обход блокировок (антицензура)
+  - GEOSITE,ru-blocked,MAIN MODE          # Трафик к заблокированным в РФ ресурсам - через прокси.
+  - DOMAIN-SUFFIX,filmix.my,MAIN MODE
+  - DOMAIN-SUFFIX,filmix.ac,MAIN MODE
+  - DOMAIN-SUFFIX,filmix.biz,MAIN MODE
+  - DOMAIN-SUFFIX,filmix.quest,MAIN MODE
+  - DOMAIN-SUFFIX,filmix.fans,MAIN MODE
+  - DOMAIN-SUFFIX,click-or-die.ru,MAIN MODE # click-or-die.ru через прокси.
+  - OR,((DOMAIN,ipwho.is),
+        (DOMAIN,api.ip.sb),
+        (DOMAIN,ipapi.co),
+        (DOMAIN,ipinfo.io)),MAIN MODE     # Сервисы проверки IP через прокси.
+
+  # Стриминговые сервисы (через прокси для обхода геоблокировок или лучшей доступности)
+  - RULE-SET,streaming,MAIN MODE          # Направление трафика стриминговых сервисов через прокси.
+
+  # Специфичные правила
+  - DOMAIN-SUFFIX,just-another-domain.uk,DIRECT # Домен подписки — напрямую.
+  - RULE-SET,discord-voice-ips,MAIN MODE  # Discord Voice — через прокси для стабильности.
+
+  # Прямой доступ для игровых и сервисных доменов
+  - DOMAIN-SUFFIX,battle.net,DIRECT
+  - DOMAIN-SUFFIX,battlenet.com,DIRECT
+  - DOMAIN-SUFFIX,blizzard.com,DIRECT
+  - DOMAIN-SUFFIX,blzstatic.com,DIRECT
+  - DOMAIN-SUFFIX,playoverwatch.com,DIRECT
+  - DOMAIN-SUFFIX,microsoft.com,DIRECT
+  - DOMAIN-SUFFIX,avito.st,DIRECT
+  - DOMAIN-SUFFIX,ozonusercontent.com,DIRECT
+  - DOMAIN-SUFFIX,freedns.controld.com,DIRECT
+  - DOMAIN-SUFFIX,mozilla.com,DIRECT
+  - DOMAIN-SUFFIX,mi.com,DIRECT
+  - DOMAIN-SUFFIX,xiaomi.com,DIRECT
+
+  # Прямой доступ для торрентов (чтобы не грузить прокси и избежать блокировок)
+  - RULE-SET,torrent-clients,DIRECT         # Торрент-клиенты напрямую.
+  - RULE-SET,torrent-trackers,DIRECT        # Торрент-трекеры напрямую.
+  - DST-PORT,6881-6889,DIRECT             # BitTorrent порты напрямую.
+  - DST-PORT,51413,DIRECT                 # Дополнительный BitTorrent порт напрямую.
+
+  # Прямой доступ для российских и локальных ресурсов (для скорости и стабильности)
+  - DOMAIN-SUFFIX,ru,DIRECT
+  - DOMAIN-SUFFIX,xn--p1ai,DIRECT         # .рф
+  - GEOSITE,category-ru,DIRECT
+  - GEOSITE,category-gov-ru,DIRECT
+  - GEOSITE,yandex,DIRECT
+  - GEOSITE,vk,DIRECT
+  - GEOSITE,steam,DIRECT
+  - GEOSITE,CN,DIRECT                     # Китай напрямую (если это не заблокированные ресурсы).
+
+  # Прямой доступ по IP (для российских IP-адресов)
+  - GEOIP,RU,DIRECT
+
+  # Всё остальное — через прокси MAIN MODE (основное правило по умолчанию)
+  - MATCH,MAIN MODE

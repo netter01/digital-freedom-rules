@@ -36,7 +36,7 @@ Custom Xkeen rules and domain lists for bypassing blocks.
         format: mrs
         url: [https://raw.githubusercontent.com/netter01/ИМЯ_ВАШЕГО_РЕПОЗИТОРИЯ/main/my-custom-blocked.mrs](https://raw.githubusercontent.com/netter01/ИМЯ_ВАШЕГО_РЕПОЗИТОРИЯ/main/my-custom-blocked.mrs) # Замените ИМЯ_ВАШЕГО_РЕПОЗИТОРИЯ на актуальное
         path: ./rule-sets/my-custom-blocked-domains.mrs
-        interval: 3600 # Обновлять каждый час
+        interval: 86400 # Обновлять раз в 24 часа
     ```
 
     И добавьте это правило в секцию `rules`:

@@ -1,5 +1,7 @@
 payload:
   - DOMAIN-SUFFIX,filmix.my
+  - DOMAIN-SUFFIX,filmix.sh
+  - DOMAIN-SUFFIX,filmix.li
   - DOMAIN-SUFFIX,filmix.cc
   - DOMAIN-SUFFIX,filmix.co
   - DOMAIN-SUFFIX,filmix.date
